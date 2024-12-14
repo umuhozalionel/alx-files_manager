@@ -77,6 +77,8 @@ class FilesController {
       return res.status(500).json({ error: 'Internal Server Error' });
     }
   }
-}
 
-module.exports = FilesController;
+  static async getShow(req, res) {
+    try {
+      const token = req.headers['x-token'];
+[_{{{CITATION{{{_1{](https://github.com/zacwoll/holbertonschool-files_manager/tree/ea4dbd4778a76290eb6a85227c485745039e64cd/routes%2Findex.js)[_{{{CITATION{{{_2{](https://github.com/duvanjm/holbertonschool-files_manager/tree/69e05909c52a7c6ce0e501cb3da59b896f664d16/routes%2Findex.js)[_{{{CITATION{{{_3{](https://github.com/takutotacos/kaizen_back/tree/e1c693c60d907d474bcae2e13c2df2b5d5e66d7a/helper%2Fbasic_auth.js)
