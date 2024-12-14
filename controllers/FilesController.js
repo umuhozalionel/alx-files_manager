@@ -1,72 +1,54 @@
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const { ObjectId } = require('mongodb');
+const mime = require('mime-types');
 const dbClient = require('../utils/db');
 const redisClient = require('../utils/redis');
 
 class FilesController {
-  static async postUpload(req, res) {
+  // Existing methods: postUpload, getShow, getIndex, putPublish, putUnpublish
+
+  static async getFile(req, res) {
     try {
       const token = req.headers['x-token'];
       console.log(`Received request with token: ${token}`);
 
-      if (!token) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-
-      const userId = await redisClient.get(`auth_${token}`);
-      console.log(`Resolved user ID from token: ${userId}`);
-
-      if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-
-      const { name, type, parentId = 0, isPublic = false, data } = req.body;
-      console.log(`Request body - name: ${name}, type: ${type}, parentId: ${parentId}, isPublic: ${isPublic}`);
-
-      if (!name) {
-        return res.status(400).json({ error: 'Missing name' });
-      }
-
-      if (!['folder', 'file', 'image'].includes(type)) {
-        return res.status(400).json({ error: 'Missing type' });
-      }
-
-      if (type !== 'folder' && !data) {
-        return res.status(400).json({ error: 'Missing data' });
-      }
-
+      const fileId = req.params.id;
       const filesCollection = dbClient.db.collection('files');
-      if (parentId !== 0) {
-        const parentFile = await filesCollection.findOne({ _id: ObjectId(parentId) });
-        if (!parentFile) {
-          return res.status(400).json({ error: 'Parent not found' });
+      const file = await filesCollection.findOne({ _id: ObjectId(fileId) });
+
+      if (!file) {
+        return res.status(404).json({ error: 'Not found' });
+      }
+
+      if (!file.isPublic) {
+        if (!token) {
+          return res.status(404).json({ error: 'Not found' });
         }
-        if (parentFile.type !== 'folder') {
-          return res.status(400).json({ error: 'Parent is not a folder' });
+
+        const userId = await redisClient.get(`auth_${token}`);
+        if (!userId || file.userId !== userId) {
+          return res.status(404).json({ error: 'Not found' });
         }
       }
 
-      const fileDocument = {
-        userId,
-        name,
-        type,
-        isPublic,
-        parentId,
-      };
-
-      if (type === 'folder') {
-        await filesCollection.insertOne(fileDocument);
-        return res.status(201).json(fileDocument);
+      if (file.type === 'folder') {
+        return res.status(400).json({ error: "A folder doesn't have content" });
       }
 
-      const FOLDER_PATH = process.env.FOLDER_PATH || '/tmp/files_manager';
-      if (!fs.existsSync(FOLDER_PATH)) {
-        fs.mkdirSync(FOLDER_PATH, { recursive: true });
+      if (!fs.existsSync(file.localPath)) {
+        return res.status(404).json({ error: 'Not found' });
       }
 
-      const localPath = `${FOLDER_PATH}/${uuidv4()}`;
-      fs.writeFileSync(localPath, Buffer.from(data, 'base64'));
+      const mimeType = mime.lookup(file.name);
+      res.setHeader('Content-Type', mimeType);
+      const fileContent = fs.readFileSync(file.localPath);
+      return res.status(200).send(fileContent);
+    } catch (error) {
+      console.error('Error retrieving file content:', error);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+  }
+}
 
-      fileDocument.localPath = localPath;
-      await files[_{{{CITATION{{{_1{](https://github.com/zacwoll/holbertonschool-files_manager/tree/ea4dbd4778a76290eb6a85227c485745039e64cd/routes%2Findex.js)[_{{{CITATION{{{_2{](https://github.com/duvanjm/holbertonschool-files_manager/tree/69e05909c52a7c6ce0e501cb3da59b896f664d16/routes%2Findex.js)[_{{{CITATION{{{_3{](https://github.com/UsmanGTA/holbertonschool-files_manager/tree/293bbfdd1cc1d0657b1768ed15a43599e6fa5229/routes%2Findex.js)[_{{{CITATION{{{_4{](https://github.com/takutotacos/kaizen_back/tree/e1c693c60d907d474bcae2e13c2df2b5d5e66d7a/helper%2Fbasic_auth.js)
+module.exports = FilesController;
